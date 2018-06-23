@@ -52,10 +52,7 @@ try:
 except ImportError:
     from md5 import md5
 
-try:
-    from argparse import ArgumentParser as ArgParser
-except ImportError:
-    from optparse import OptionParser as ArgParser
+from optparse import OptionParser as ArgParser
 
 try:
     import builtins
@@ -346,11 +343,11 @@ def speedtest():
     """Run the full speedtest.net test"""
 
     description = (
-        'Command line interface for testing internet bandwidth using '
+        'Light version of command line interface for testing internet bandwidth using '
         'speedtest.net.\n'
         '------------------------------------------------------------'
         '--------------\n'
-        'https://github.com/sivel/speedtest-cli')
+        'https://github.com/Delta-Sigma/speedtest-cli-light')
 
     parser = ArgParser(description=description)
     try:
