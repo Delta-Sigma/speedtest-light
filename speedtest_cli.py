@@ -52,7 +52,7 @@ try:
 except ImportError:
     from md5 import md5
 
-from optparse import OptionParser as ArgParser
+from optparse import OptionParser
 
 try:
     import builtins
@@ -349,7 +349,7 @@ def speedtest():
         '--------------\n'
         'https://github.com/Delta-Sigma/speedtest-cli-light')
 
-    parser = ArgParser(description=description)
+    parser = OptionParser(description=description)
     try:
         parser.add_argument = parser.add_option
     except AttributeError:
