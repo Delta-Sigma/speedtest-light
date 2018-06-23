@@ -52,7 +52,4 @@ chmod +x speedtest-cli
 
     optional arguments:
       -h, --help       show this help message and exit
-      --simple         Suppress verbose output, only show basic information
-      --list           Display a list of speedtest.net servers sorted by distance
-      --server SERVER  Specify a server ID to test against
-      --mini MINI      URL of the Speedtest Mini server
+      -q, --quiet      Suppress verbose output, only show basic information

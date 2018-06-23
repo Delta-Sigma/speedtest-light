@@ -259,7 +259,6 @@ def getBestServer(servers):
     """Perform a speedtest.net "ping" to determine which speedtest.net
     server has the lowest latency
     """
-
     results = {}
     for server in servers:
         cum = 0
@@ -299,10 +298,9 @@ def speedtest():
         parser.add_argument = parser.add_option
     except AttributeError:
         pass
-    parser.add_argument('--simple', action='store_true',
+    parser.add_argument('-q', '--quiet', action='store_true',
                         help='Suppress verbose output, only show basic '
                              'information')
-    parser.add_argument('--mini', help='URL of the Speedtest Mini server')
 
     options = parser.parse_args()
     if isinstance(options, tuple):
@@ -311,22 +309,22 @@ def speedtest():
         args = options
     del options
 
-    if not args.simple:
+    if not args.quiet:
         print('Retrieving speedtest.net configuration...')
     config = getConfig()
 
-    if not args.simple:
+    if not args.quiet:
         print('Retrieving speedtest.net server list...')
     servers = closestServers(config['client'])
 
-    if not args.simple:
+    if not args.quiet:
         print('Testing from %(isp)s (%(ip)s)...' % config['client'])
 
-    if not args.simple:
+    if not args.quiet:
         print('Selecting best server based on ping...')
     best = getBestServer(servers)
 
-    if not args.simple:
+    if not args.quiet:
         print('Hosted by %(sponsor)s (%(name)s) [%(d)0.2f km]: '
                '%(latency)s ms' % best)
     else:
@@ -338,10 +336,10 @@ def speedtest():
         for i in range(0, 4):
             urls.append('%s/random%sx%s.jpg' %
                         (os.path.dirname(best['url']), size, size))
-    if not args.simple:
+    if not args.quiet:
         print('Testing download speed', end='')
-    dlspeed = downloadSpeed(urls, args.simple)
-    if not args.simple:
+    dlspeed = downloadSpeed(urls, args.quiet)
+    if not args.quiet:
         print()
     print('Download: %0.2f Mbit/s' % ((dlspeed / 1000 / 1000) * 8))
 
@@ -350,10 +348,10 @@ def speedtest():
     for size in sizesizes:
         for i in range(0, 25):
             sizes.append(size)
-    if not args.simple:
+    if not args.quiet:
         print('Testing upload speed', end='')
-    ulspeed = uploadSpeed(best['url'], sizes, args.simple)
-    if not args.simple:
+    ulspeed = uploadSpeed(best['url'], sizes, args.quiet)
+    if not args.quiet:
         print()
     print('Upload: %0.2f Mbit/s' % ((ulspeed / 1000 / 1000) * 8))
 
