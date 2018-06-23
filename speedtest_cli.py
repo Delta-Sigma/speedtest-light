@@ -14,6 +14,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from __future__ import print_function
 
 try:
     from urllib2 import urlopen, Request
@@ -55,61 +56,11 @@ except ImportError:
 from optparse import OptionParser
 
 try:
-    import builtins
+    # python2 has thread
+    import thread as _thread
 except ImportError:
-    def print_(*args, **kwargs):
-        """The new-style print function taken from
-        https://pypi.python.org/pypi/six/
-
-        """
-        fp = kwargs.pop("file", sys.stdout)
-        if fp is None:
-            return
-
-        def write(data):
-            if not isinstance(data, basestring):
-                data = str(data)
-            fp.write(data)
-
-        want_unicode = False
-        sep = kwargs.pop("sep", None)
-        if sep is not None:
-            if isinstance(sep, unicode):
-                want_unicode = True
-            elif not isinstance(sep, str):
-                raise TypeError("sep must be None or a string")
-        end = kwargs.pop("end", None)
-        if end is not None:
-            if isinstance(end, unicode):
-                want_unicode = True
-            elif not isinstance(end, str):
-                raise TypeError("end must be None or a string")
-        if kwargs:
-            raise TypeError("invalid keyword arguments to print()")
-        if not want_unicode:
-            for arg in args:
-                if isinstance(arg, unicode):
-                    want_unicode = True
-                    break
-        if want_unicode:
-            newline = unicode("\n")
-            space = unicode(" ")
-        else:
-            newline = "\n"
-            space = " "
-        if sep is None:
-            sep = space
-        if end is None:
-            end = newline
-        for i, arg in enumerate(args):
-            if i:
-                write(sep)
-            write(arg)
-        write(end)
-else:
-    print_ = getattr(builtins, 'print')
-    del builtins
-
+    # python3 has _thread
+    import _thread
 
 def distance(origin, destination):
     """Determine distance between 2 sets of [lat,lon] in km"""
@@ -238,12 +189,10 @@ def uploadSpeed(url, sizes, quiet=False):
 
     q = Queue(6)
     start = time.time()
+    # prod_thread = _thread.start_new_thread(producer, (q,sizes))
     prod_thread = threading.Thread(target=producer, args=(q, sizes))
+    # cons_thread = _thread.start_new_thread(consumer, (q,len(sizes)))
     cons_thread = threading.Thread(target=consumer, args=(q, len(sizes)))
-    prod_thread.start()
-    cons_thread.start()
-    prod_thread.join()
-    cons_thread.join()
     return (sum(finished)/(time.time()-start))
 
 
@@ -371,11 +320,11 @@ def speedtest():
     del options
 
     if not args.simple:
-        print_('Retrieving speedtest.net configuration...')
+        print('Retrieving speedtest.net configuration...')
     config = getConfig()
 
     if not args.simple:
-        print_('Retrieving speedtest.net server list...')
+        print('Retrieving speedtest.net server list...')
     if args.list or args.server:
         servers = closestServers(config['client'], True)
         if args.list:
@@ -385,7 +334,7 @@ def speedtest():
                         '[%(d)0.2f km]' % server)
                 serverList.append(line)
             try:
-                print_('\n'.join(serverList).encode('utf-8', 'ignore'))
+                print('\n'.join(serverList).encode('utf-8', 'ignore'))
             except IOError:
                 pass
             sys.exit(0)
@@ -393,14 +342,14 @@ def speedtest():
         servers = closestServers(config['client'])
 
     if not args.simple:
-        print_('Testing from %(isp)s (%(ip)s)...' % config['client'])
+        print('Testing from %(isp)s (%(ip)s)...' % config['client'])
 
     if args.server:
         try:
             best = getBestServer(filter(lambda x: x['id'] == args.server,
                                         servers))
         except IndexError:
-            print_('Invalid server ID')
+            print('Invalid server ID')
             sys.exit(1)
     elif args.mini:
         name, ext = os.path.splitext(args.mini)
@@ -412,14 +361,14 @@ def speedtest():
         try:
             f = urlopen(args.mini)
         except:
-            print_('Invalid Speedtest Mini URL')
+            print('Invalid Speedtest Mini URL')
             sys.exit(1)
         else:
             text = f.read()
             f.close()
         extension = re.findall('upload_extension: "([^"]+)"', text.decode())
         if not urlparts or not extension:
-            print_('Please provide the full URL of your Speedtest Mini server')
+            print('Please provide the full URL of your Speedtest Mini server')
             sys.exit(1)
         servers = [{
             'sponsor': 'Speedtest Mini',
@@ -435,14 +384,14 @@ def speedtest():
             best = servers[0]
     else:
         if not args.simple:
-            print_('Selecting best server based on ping...')
+            print('Selecting best server based on ping...')
         best = getBestServer(servers)
 
     if not args.simple:
-        print_('Hosted by %(sponsor)s (%(name)s) [%(d)0.2f km]: '
+        print('Hosted by %(sponsor)s (%(name)s) [%(d)0.2f km]: '
                '%(latency)s ms' % best)
     else:
-        print_('Ping: %(latency)s ms' % best)
+        print('Ping: %(latency)s ms' % best)
 
     sizes = [350, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000]
     urls = []
@@ -451,11 +400,11 @@ def speedtest():
             urls.append('%s/random%sx%s.jpg' %
                         (os.path.dirname(best['url']), size, size))
     if not args.simple:
-        print_('Testing download speed', end='')
+        print('Testing download speed', end='')
     dlspeed = downloadSpeed(urls, args.simple)
     if not args.simple:
-        print_()
-    print_('Download: %0.2f Mbit/s' % ((dlspeed / 1000 / 1000) * 8))
+        print()
+    print('Download: %0.2f Mbit/s' % ((dlspeed / 1000 / 1000) * 8))
 
     sizesizes = [int(.25 * 1000 * 1000), int(.5 * 1000 * 1000)]
     sizes = []
@@ -463,19 +412,17 @@ def speedtest():
         for i in range(0, 25):
             sizes.append(size)
     if not args.simple:
-        print_('Testing upload speed', end='')
+        print('Testing upload speed', end='')
     ulspeed = uploadSpeed(best['url'], sizes, args.simple)
     if not args.simple:
-        print_()
-    print_('Upload: %0.2f Mbit/s' % ((ulspeed / 1000 / 1000) * 8))
+        print()
+    print('Upload: %0.2f Mbit/s' % ((ulspeed / 1000 / 1000) * 8))
 
 def main():
     try:
         speedtest()
     except KeyboardInterrupt:
-        print_('\nCancelling...')
+        print('\nCancelling...')
 
 if __name__ == '__main__':
     main()
-
-# vim:ts=4:sw=4:expandtab
