@@ -294,12 +294,8 @@ def speedtest():
         'https://github.com/Delta-Sigma/speedtest-cli-light')
 
     parser = OptionParser(description=description)
-    try:
-        parser.add_argument = parser.add_option
-    except AttributeError:
-        pass
-    parser.add_argument('-q', '--quiet', action='store_true',
-                        help='Suppress verbose output, only show basic '
+    parser.add_option('-q', '--quiet', action='store_true',
+                      help='Suppress verbose output, only show basic '
                              'information')
 
     options = parser.parse_args()
