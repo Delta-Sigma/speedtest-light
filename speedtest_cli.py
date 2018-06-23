@@ -193,6 +193,10 @@ def uploadSpeed(url, sizes, quiet=False):
     prod_thread = threading.Thread(target=producer, args=(q, sizes))
     # cons_thread = _thread.start_new_thread(consumer, (q,len(sizes)))
     cons_thread = threading.Thread(target=consumer, args=(q, len(sizes)))
+    prod_thread.start()
+    cons_thread.start()
+    prod_thread.join()
+    cons_thread.join()
     return (sum(finished)/(time.time()-start))
 
 
@@ -325,21 +329,7 @@ def speedtest():
 
     if not args.simple:
         print('Retrieving speedtest.net server list...')
-    if args.list or args.server:
-        servers = closestServers(config['client'], True)
-        if args.list:
-            serverList = []
-            for server in servers:
-                line = ('%(id)4s) %(sponsor)s (%(name)s, %(country)s) '
-                        '[%(d)0.2f km]' % server)
-                serverList.append(line)
-            try:
-                print('\n'.join(serverList).encode('utf-8', 'ignore'))
-            except IOError:
-                pass
-            sys.exit(0)
-    else:
-        servers = closestServers(config['client'])
+    servers = closestServers(config['client'])
 
     if not args.simple:
         print('Testing from %(isp)s (%(ip)s)...' % config['client'])
