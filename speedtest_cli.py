@@ -55,16 +55,9 @@ except ImportError:
 
 from optparse import OptionParser
 
-try:
-    # python2 has thread
-    import thread as _thread
-except ImportError:
-    # python3 has _thread
-    import _thread
 
 def distance(origin, destination):
     """Determine distance between 2 sets of [lat,lon] in km"""
-
     lat1, lon1 = origin
     lat2, lon2 = destination
     radius = 6371  # km
@@ -76,7 +69,6 @@ def distance(origin, destination):
          * math.sin(dlon / 2))
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     d = radius * c
-
     return d
 
 
@@ -310,10 +302,6 @@ def speedtest():
     parser.add_argument('--simple', action='store_true',
                         help='Suppress verbose output, only show basic '
                              'information')
-    parser.add_argument('--list', action='store_true',
-                        help='Display a list of speedtest.net servers '
-                             'sorted by distance')
-    parser.add_argument('--server', help='Specify a server ID to test against')
     parser.add_argument('--mini', help='URL of the Speedtest Mini server')
 
     options = parser.parse_args()
@@ -334,48 +322,9 @@ def speedtest():
     if not args.simple:
         print('Testing from %(isp)s (%(ip)s)...' % config['client'])
 
-    if args.server:
-        try:
-            best = getBestServer(filter(lambda x: x['id'] == args.server,
-                                        servers))
-        except IndexError:
-            print('Invalid server ID')
-            sys.exit(1)
-    elif args.mini:
-        name, ext = os.path.splitext(args.mini)
-        if ext:
-            url = os.path.dirname(args.mini)
-        else:
-            url = args.mini
-        urlparts = urlparse(url)
-        try:
-            f = urlopen(args.mini)
-        except:
-            print('Invalid Speedtest Mini URL')
-            sys.exit(1)
-        else:
-            text = f.read()
-            f.close()
-        extension = re.findall('upload_extension: "([^"]+)"', text.decode())
-        if not urlparts or not extension:
-            print('Please provide the full URL of your Speedtest Mini server')
-            sys.exit(1)
-        servers = [{
-            'sponsor': 'Speedtest Mini',
-            'name': urlparts[1],
-            'd': 0,
-            'url': '%s/speedtest/upload.%s' % (url.rstrip('/'), extension[0]),
-            'latency': 0,
-            'id': 0
-        }]
-        try:
-            best = getBestServer(servers)
-        except:
-            best = servers[0]
-    else:
-        if not args.simple:
-            print('Selecting best server based on ping...')
-        best = getBestServer(servers)
+    if not args.simple:
+        print('Selecting best server based on ping...')
+    best = getBestServer(servers)
 
     if not args.simple:
         print('Hosted by %(sponsor)s (%(name)s) [%(d)0.2f km]: '
