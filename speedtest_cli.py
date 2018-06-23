@@ -357,9 +357,6 @@ def speedtest():
         parser.add_argument = parser.add_option
     except AttributeError:
         pass
-    parser.add_argument('--share', action='store_true',
-                        help='Generate and provide a URL to the speedtest.net '
-                             'share results image')
     parser.add_argument('--simple', action='store_true',
                         help='Suppress verbose output, only show basic '
                              'information')
@@ -474,49 +471,6 @@ def speedtest():
     if not args.simple:
         print_()
     print_('Upload: %0.2f Mbit/s' % ((ulspeed / 1000 / 1000) * 8))
-
-    if args.share and args.mini:
-        print_('Cannot generate a speedtest.net share results image while '
-               'testing against a Speedtest Mini server')
-    elif args.share:
-        dlspeedk = int(round((dlspeed / 1000) * 8, 0))
-        ping = int(round(best['latency'], 0))
-        ulspeedk = int(round((ulspeed / 1000) * 8, 0))
-
-        apiData = [
-            'download=%s' % dlspeedk,
-            'ping=%s' % ping,
-            'upload=%s' % ulspeedk,
-            'promo=',
-            'startmode=%s' % 'pingselect',
-            'recommendedserverid=%s' % best['id'],
-            'accuracy=%s' % 1,
-            'serverid=%s' % best['id'],
-            'hash=%s' % md5(('%s-%s-%s-%s' %
-                             (ping, ulspeedk, dlspeedk, '297aae72'))
-                            .encode()).hexdigest()]
-
-        req = Request('http://www.speedtest.net/api/api.php',
-                      data='&'.join(apiData).encode())
-        req.add_header('Referer', 'http://c.speedtest.net/flash/speedtest.swf')
-        f = urlopen(req)
-        response = f.read()
-        code = f.code
-        f.close()
-
-        if int(code) != 200:
-            print_('Could not submit results to speedtest.net')
-            sys.exit(1)
-
-        qsargs = parse_qs(response.decode())
-        resultid = qsargs.get('resultid')
-        if not resultid or len(resultid) != 1:
-            print_('Could not submit results to speedtest.net')
-            sys.exit(1)
-
-        print_('Share results: http://www.speedtest.net/result/%s.png' %
-               resultid[0])
-
 
 def main():
     try:
