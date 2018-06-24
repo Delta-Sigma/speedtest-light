@@ -55,6 +55,7 @@ except ImportError:
 
 from optparse import OptionParser
 
+DEVNULL = open(os.devnull, 'w')
 
 def distance(origin, destination):
     """Determine distance between 2 sets of [lat,lon] in km"""
@@ -72,18 +73,18 @@ def distance(origin, destination):
     return d
 
 
-def downloadSpeed(files, quiet=False):
+def downloadSpeed(files, quiet=False, sampling_time=10):
     i = 0
     processes = []
     total_size = 0
     start = time.time()
     for file in files:
         i += 1
-        process = subprocess.Popen('wget -O file{} {}'.format(i, file))
+        process = subprocess.Popen('wget -O file{} {}'.format(i, file), stdout=DEVNULL)
         processes.append(process)
-    while time.time() - start <= 10:
+    while time.time() - start <= sampling_time:
         if not quiet:
-            print('.')
+            print('.', end='')
         time.sleep(1)
     i = 0
     for process in processes:
@@ -166,7 +167,7 @@ def getConfig():
     we are interested in
     """
 
-    exit_code = subprocess.call('wget -O config.xml http://www.speedtest.net/speedtest-config.php')
+    exit_code = subprocess.call('wget -O config.xml http://www.speedtest.net/speedtest-config.php', stdout=DEVNULL)
     if exit_code:
         return None
     with open('config.xml', 'rt') as config_file:
@@ -188,7 +189,8 @@ def closestServers(client, all=False):
     distance
     """
 
-    exit_code = subprocess.call('wget -O servers.xml http://c.speedtest.net/speedtest-servers-static.php')
+    exit_code = subprocess.call('wget -O servers.xml http://c.speedtest.net/speedtest-servers-static.php',
+                                stdout=DEVNULL)
     if exit_code:
         return None
     with open('servers.xml', 'rt') as servers_file:
