@@ -17,9 +17,9 @@
 from __future__ import print_function
 
 try:
-    from urllib2 import urlopen, Request
+    from urllib2 import urlopen
 except ImportError:
-    from urllib.request import urlopen, Request
+    from urllib.request import urlopen
 
 import math
 import time
@@ -27,7 +27,7 @@ import os
 import sys
 import threading
 import binascii
-import re
+import subprocess
 from xml.dom import minidom as DOM
 
 try:
@@ -72,64 +72,28 @@ def distance(origin, destination):
     return d
 
 
-class FileGetter(threading.Thread):
-    def __init__(self, url, start):
-        self.url = url
-        self.result = None
-        self.starttime = start
-        threading.Thread.__init__(self)
-
-    def get_result(self):
-        return self.result
-
-    def run(self):
-        try:
-            if (time.time() - self.starttime) <= 10:
-                f = urlopen(self.url)
-                self.result = 0
-                while 1:
-                    contents = f.read(10240)
-                    if contents:
-                        self.result += len(contents)
-                    else:
-                        break
-                f.close()
-            else:
-                self.result = 0
-        except IOError:
-            self.result = 0
-
-
 def downloadSpeed(files, quiet=False):
+    i = 0
+    processes = []
+    total_size = 0
     start = time.time()
-
-    def producer(q, files):
-        for file in files:
-            thread = FileGetter(file, start)
-            thread.start()
-            q.put(thread, True)
-            if not quiet:
-                sys.stdout.write('.')
-                sys.stdout.flush()
-
-    finished = []
-
-    def consumer(q, total_files):
-        while len(finished) < total_files:
-            thread = q.get(True)
-            thread.join()
-            finished.append(thread.result)
-            thread.result = 0
-
-    q = Queue(6)
-    start = time.time()
-    prod_thread = threading.Thread(target=producer, args=(q, files))
-    cons_thread = threading.Thread(target=consumer, args=(q, len(files)))
-    prod_thread.start()
-    cons_thread.start()
-    prod_thread.join()
-    cons_thread.join()
-    return (sum(finished)/(time.time()-start))
+    for file in files:
+        i += 1
+        process = subprocess.Popen('wget -O file{} {}'.format(i, file))
+        processes.append(process)
+    while time.time() - start <= 10:
+        if not quiet:
+            print('.')
+        time.sleep(1)
+    i = 0
+    for process in processes:
+        i += 1
+        process.kill()
+        total_size += os.path.getsize('file{}'.format(i))
+        subprocess.Popen('rm file{}'.format(i))
+    end = time.time()
+    total_time = end - start
+    return total_size/total_time
 
 
 class FilePutter(threading.Thread):
@@ -202,11 +166,12 @@ def getConfig():
     we are interested in
     """
 
-    uh = urlopen('http://www.speedtest.net/speedtest-config.php')
-    configxml = uh.read()
-    if int(uh.code) != 200:
+    exit_code = subprocess.call('wget -O config.xml http://www.speedtest.net/speedtest-config.php')
+    if exit_code:
         return None
-    uh.close()
+    with open('config.xml', 'rt') as config_file:
+        configxml = config_file.read()
+    os.remove('config.xml')
     root = DOM.parseString(configxml)
     config = {
         'client': getAttributesByTagName(root, 'client'),
@@ -223,11 +188,12 @@ def closestServers(client, all=False):
     distance
     """
 
-    uh = urlopen('http://www.speedtest.net/speedtest-servers.php')
-    serversxml = uh.read()
-    if int(uh.code) != 200:
+    exit_code = subprocess.call('wget -O servers.xml http://c.speedtest.net/speedtest-servers-static.php')
+    if exit_code:
         return None
-    uh.close()
+    with open('servers.xml', 'rt') as servers_file:
+        serversxml = servers_file.read()
+    os.remove('servers.xml')
     root = DOM.parseString(serversxml)
     servers = {}
     for server in root.getElementsByTagName('server'):
@@ -359,3 +325,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
